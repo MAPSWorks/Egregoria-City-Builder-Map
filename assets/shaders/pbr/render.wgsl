@@ -1,5 +1,6 @@
 #include "dither.wgsl"
 #include "tonemap.wgsl"
+#include "atmosphere.wgsl"
 
 fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -8,8 +9,6 @@ fn fresnelSchlick(cosTheta: f32, F0: vec3<f32>) -> vec3<f32> {
 fn fresnelSchlickRoughness(cosTheta: f32, F0: vec3<f32>, roughness: f32) -> vec3<f32> {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
-
-const PI: f32 = 3.14159265359;
 
 fn DistributionGGX(NdotH: f32, roughness: f32) -> f32 {
     let a: f32      = roughness*roughness;
@@ -53,7 +52,9 @@ fn render(sun: vec3<f32>,
           metallic: f32,
           roughness: f32,
           shadow_v: f32,
-          ssao: f32) -> vec3<f32>  {
+          ssao: f32,
+          depth: f32
+          ) -> vec3<f32>  {
     let H: vec3<f32> = normalize(sun + V);
     let NdotL: f32 = max(dot(normal, sun), 0.0);
     let NdotV: f32 = max(dot(normal, V), 0.0);
@@ -79,7 +80,9 @@ fn render(sun: vec3<f32>,
     dkD *= 1.0 - vec3(metallic);
 
     let ambient: vec3<f32> = (0.2 * dkD * irradiance_diffuse * albedo + specular) * ssao;
-    var color: vec3<f32>   = ambient + Lo;
+    let atmosphere: vec3<f32> = atmosphere(-V, sun, depth * 0.2);
+
+    var color: vec3<f32>   = ambient + Lo + atmosphere;
 
     color = tonemap(color);
 

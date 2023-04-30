@@ -86,7 +86,9 @@ fn frag(@location(0) in_tint: vec4<f32>,
     let irradiance_diffuse: vec3<f32> = textureSample(t_diffuse_irradiance, s_diffuse_irradiance, normal).rgb;
     let c = in_tint * albedo;
 
-    let V: vec3<f32> = normalize(params.cam_pos.xyz - in_wpos);
+    let V_denorm: vec3<f32> = params.cam_pos.xyz - in_wpos;
+    let depth: f32 = length(V_denorm);
+    let V: vec3<f32> = V_denorm / depth;
     let R: vec3<f32> = reflect(-V, normal);
 
     let prefilteredColor: vec3<f32> = textureSampleLevel(t_prefilter_specular, s_prefilter_specular, R, roughness * MAX_REFLECTION_LOD).rgb;
@@ -111,7 +113,8 @@ fn frag(@location(0) in_tint: vec4<f32>,
                                       metallic,
                                       roughness,
                                       shadow_v,
-                                      ssao);
+                                      ssao,
+                                      depth);
 
     return FragmentOutput(vec4<f32>(final_rgb, c.a));
 }
